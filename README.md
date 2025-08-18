@@ -42,18 +42,23 @@ online_tuition_project/
 │ ├── views.py
 │ ├── urls.py
 │
+
+
 │── courses/ # Course Management
 │ ├── models.py
 │ ├── serializers.py
 │ ├── views.py
 │ ├── urls.py
 │
+
+
 │── assignments/ # Assignment Management
 │ ├── models.py
 │ ├── serializers.py
 │ ├── views.py
 │ ├── urls.py
 │
+
 │── students/ # Enrollment & Submissions
 │ ├── models.py
 │ ├── serializers.py
@@ -62,6 +67,7 @@ online_tuition_project/
 │
 │── tutors/ # Tutor profiles and permissions
 │
+
 │── settings.py # Project configurations (JWT, filters, permissions)
 │── urls.py # Root project urls
 
@@ -119,5 +125,6 @@ online_tuition_project/
    POST /api/courses/{id}/enroll/ → Student enrolls in course.
 
    GET /api/students/enrollments/ → Student views their courses.
+
 
 
