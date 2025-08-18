@@ -33,20 +33,6 @@ This system manages **Tutors, Students, Parents, Courses, and Assignments** with
 
 ---
 
-## 🏗 Project Structure
-online_tuition_project/
-│── users/ # Custom User model (roles: admin, tutor, student, parent)
-│ ├── models.py
-│ ├── serializers.py
-│ ├── views.py
-│ ├── urls.py
-
-│── courses/ # Course Management
-│ ├── models.py
-│ ├── serializers.py
-│ ├── views.py
-│ ├── urls.py
-
 ## ⚙️ Installation
 
 1. Clone the repository:
@@ -98,6 +84,7 @@ online_tuition_project/
     POST /api/courses/{id}/enroll/ → Student enrolls in course.
 
     GET /api/students/enrollments/ → Student views their courses.
+
 
 
 
