@@ -1,12 +1,24 @@
+# urls.py
 from django.urls import path
+from teacher.views import (
+    TeacherListView,
+    TeacherProfileManageView,
+    TeacherCreateView,
+)
 
-from teacher.views import *
+app_name = "teacher"
+
 urlpatterns = [
-   # urls.py
-         path('pro/',TeacherListView.as_view(),name='teacher'),
-         path('pro/<int:pk>/', TeacherDetailView.as_view(), name='teacher-detail'),
-         path('pro/<int:pk>',TeacherProfileManageView.as_view()),
-         path('pro/create/', TeacherCreateView.as_view(), name='teacher-create'),
-
-
+    # ------------------------------------------------------------------
+    # Teacher Endpoints
+    # ------------------------------------------------------------------
+    
+    # List all teachers
+    path("profile/", TeacherListView.as_view(), name="teacher-list"),
+    
+    # Create a teacher profile (only for authenticated teachers)
+    path("profile/create/", TeacherCreateView.as_view(), name="teacher-create"),
+    
+    # Retrieve, update, or delete the logged-in teacher's profile
+    path("profile/<int:pk>/", TeacherProfileManageView.as_view(), name="teacher-detail"),
 ]

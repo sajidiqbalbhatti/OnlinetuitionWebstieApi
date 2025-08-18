@@ -1,78 +1,132 @@
 # views.py
+from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework import status,generics
+from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.pagination import CursorPagination
+from rest_framework.throttling import UserRateThrottle
+from django_filters.rest_framework import DjangoFilterBackend
+
 from .models import Teacher
-
 from .serializer import TeacherSerializer
+from .filters import TeacherFilter
 
+
+# ----------------------------------------------------------------------
+# Custom Scoped Throttling
+# ----------------------------------------------------------------------
+class CustomTeacherProfileCreateThrottle(UserRateThrottle):
+    scope = "teacher_profile_create"
+
+
+class CustomTeacherProfileUpdateThrottle(UserRateThrottle):
+    scope = "teacher_profile_update"
+
+
+# ----------------------------------------------------------------------
+# Teacher Create API
+# ----------------------------------------------------------------------
 class TeacherCreateView(APIView):
-    permission_classes=[IsAuthenticated]
-    
+    """
+    Allows authenticated teachers to create their profile.
+    Only one profile per teacher is allowed.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [CustomTeacherProfileCreateThrottle]
+
     def post(self, request):
-        if request.user.role !='teacher':
-            return Response({'error':'Only teachers can create a teacher profile'})
-        
-        if hasattr(request.user,'teacher'):
-            return Response({'error':'Teacher profile already exists.'},status=400)
+        if request.user.role != "teacher":
+            return Response(
+                {"error": "Only teachers can create a teacher profile."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if hasattr(request.user, "teacher_profile"):
+            return Response(
+                {"error": "Teacher profile already exists."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         data = request.data.copy()
-        data['user'] = request.user.id
+        data["user"] = request.user.id
+
         serializer = TeacherSerializer(data=data)
         if serializer.is_valid():
             serializer.save(user=request.user)
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-class TeacherListView(APIView):
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ----------------------------------------------------------------------
+# Teacher List API
+# ----------------------------------------------------------------------
+class TeacherListView(generics.ListAPIView):
+    """
+    Public endpoint: List all teachers.
+    Supports pagination, filtering, searching, and ordering.
+    """
+
+    queryset = Teacher.objects.all()
+    serializer_class = TeacherSerializer
     permission_classes = [AllowAny]
-
-    def get(self, request, format=None):
-        teachers = Teacher.objects.all()
-        serializer = TeacherSerializer(teachers, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-
-class TeacherDetailView(APIView):
-    
-    permission_classes = [AllowAny]
-
-    def get(self, request, pk, *args, **kwargs):
-        try:
-            teacher = Teacher.objects.get(pk=pk)
-            serializer = TeacherSerializer(teacher)
-            return Response(serializer.data)
-        except Teacher.DoesNotExist:
-            return Response({"detail": "Teacher not found."}, status=status.HTTP_404_NOT_FOUND)
+    pagination_class = CursorPagination
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filterset_class = TeacherFilter
+    search_fields = ["first_name", "last_name", "qualification"]
 
 
+# ----------------------------------------------------------------------
+# Teacher Profile Manage API
+# ----------------------------------------------------------------------
 class TeacherProfileManageView(generics.RetrieveUpdateDestroyAPIView):
     """
-    Only logged-in teacher can manage their profile
+    Logged-in teacher can view, update, or delete their profile.
     """
+
     serializer_class = TeacherSerializer
     permission_classes = [IsAuthenticated]
+    throttle_classes = [CustomTeacherProfileUpdateThrottle]
+
+    def get_throttles(self):
+        """
+        Disable throttling for PUT requests.
+        """
+        if self.request.method.lower() == "put":
+            return []
+        return super().get_throttles()
 
     def get_object(self):
-        try:
-            return self.request.user.teacher
-        except Teacher.DoesNotExist:
-            return None
+        """
+        Returns teacher profile of the logged-in user.
+        """
+        return getattr(self.request.user, "teacher_profile", None)
 
     def get(self, request, *args, **kwargs):
         teacher = self.get_object()
-        if teacher is None:
-            return Response({"detail": "You are not registered as a teacher."}, status=status.HTTP_403_FORBIDDEN)
+        if not teacher:
+            return Response(
+                {"detail": "You are not registered as a teacher."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         return self.retrieve(request, *args, **kwargs)
 
     def put(self, request, *args, **kwargs):
         teacher = self.get_object()
-        if teacher is None:
-            return Response({"detail": "You are not registered as a teacher."}, status=status.HTTP_403_FORBIDDEN)
+        if not teacher:
+            return Response(
+                {"detail": "You are not registered as a teacher."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         return self.update(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
         teacher = self.get_object()
-        if teacher is None:
-            return Response({"detail": "You are not registered as a teacher."}, status=status.HTTP_403_FORBIDDEN)
+        if not teacher:
+            return Response(
+                {"detail": "You are not registered as a teacher."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         return self.destroy(request, *args, **kwargs)

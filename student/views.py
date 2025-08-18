@@ -1,76 +1,166 @@
-from django.shortcuts import render
+# views.py
+from django.shortcuts import get_object_or_404
+from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from django.shortcuts import get_object_or_404
+from rest_framework.pagination import CursorPagination
+from rest_framework.throttling import UserRateThrottle
+
 from .models import Student
 from .serializers import StudentSerializer
-# Create your views here.    
+from .filter import StudentAgeFilter
+
+
+# ----------------------------------------------------------------------
+# Custom Throttling Classes for Student
+# ----------------------------------------------------------------------
+class StudentCreateThrottle(UserRateThrottle):
+    scope = "student_create"
+
+
+class StudentUpdateThrottle(UserRateThrottle):
+    scope = "student_update"
+
+
+# ----------------------------------------------------------------------
+# Student Create API
+# ----------------------------------------------------------------------
 class StudentCreateView(APIView):
+    """
+    Allows authenticated students to create their profile.
+    Only one profile per student is allowed.
+    """
+
     permission_classes = [IsAuthenticated]
-    
+    throttle_classes = [StudentCreateThrottle]
+
     def post(self, request):
-        if hasattr(request.user, 'student'):
-            return Response({'error':'Profile already exists.'},status=400)
+        if request.user.role != "student":
+            return Response(
+                {"error": "Only students can create a student profile."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if hasattr(request.user, "student"):
+            return Response(
+                {"error": "Profile already exists."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         data = request.data.copy()
-        data['user']=request.user.id
+        data["user"] = request.user.id
+
         serializer = StudentSerializer(data=data)
         if serializer.is_valid():
             serializer.save(user=request.user)
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)  
-    
-class StudentListView(APIView):
-    permission_classes=[AllowAny]
-    def get(self, request):
-        student =Student.objects.all()
-        serializer =StudentSerializer(student, many=True)
-        return Response(serializer.data)
-    
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ----------------------------------------------------------------------
+# Student List API
+# ----------------------------------------------------------------------
+class StudentListView(generics.ListAPIView):
+    """
+    Public endpoint to list all students.
+    Supports filtering, searching, ordering, and cursor pagination.
+    """
+
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+    permission_classes = [AllowAny]
+    pagination_class = CursorPagination
+    filterset_class = StudentAgeFilter
+
+    ordering_fields = ["student_name", "age"]
+    search_fields = ["student_name", "age", "student_class"]
+
+
+# ----------------------------------------------------------------------
+# Student Public Detail API
+# ----------------------------------------------------------------------
 class StudentPublicDetailView(APIView):
+    """
+    Get student details by student ID (public access).
+    """
+
     permission_classes = [AllowAny]
 
     def get(self, request, pk):
         student = get_object_or_404(Student, pk=pk)
         serializer = StudentSerializer(student)
         return Response(serializer.data)
-    
+
+
+# ----------------------------------------------------------------------
+# Logged-in Student Profile Management
+# ----------------------------------------------------------------------
 class StudentMeView(APIView):
-    permission_classes=[IsAuthenticated]
+    """
+    Logged-in student can retrieve, update, or delete their profile.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [StudentUpdateThrottle]
+
+    def get_throttles(self):
+        """Disable throttling for PUT requests."""
+        if self.request.method.lower() == "put":
+            return []
+        return super().get_throttles()
+
     def get(self, request):
-        if not hasattr(request.user, 'student'):
-            return Response({'error':'Profile does not exist.'},status=404)
-        serializer = StudentSerializer(request.user.student)
+        student = getattr(request.user, "student", None)
+        if not student:
+            return Response({"error": "Profile does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = StudentSerializer(student)
         return Response(serializer.data)
-    
+
     def put(self, request):
-        student = request.user.student
+        student = getattr(request.user, "student", None)
+        if not student:
+            return Response({"error": "Profile does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
         serializer = StudentSerializer(student, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=400)
-    
-    def delete(self, request):
-        student = request.user.student
-        student.delete()
-        return Response({'message':'Profile deleted successfully'}, status=200)
-        
-    
 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        student = getattr(request.user, "student", None)
+        if not student:
+            return Response({"error": "Profile does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        student.delete()
+        return Response({"message": "Profile deleted successfully."}, status=status.HTTP_200_OK)
+
+
+# ----------------------------------------------------------------------
+# Enroll Student in a Course
+# ----------------------------------------------------------------------
 class EnrollCourseView(APIView):
-    permission_classes=[IsAuthenticated]
-    
+    """
+    Allows a logged-in student to enroll in a course.
+    """
+
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
-        student = request.user.student
-        course_id = request.data.get('course_id')
+        student = getattr(request.user, "student", None)
+        if not student:
+            return Response({"error": "Profile does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        course_id = request.data.get("course_id")
         if not course_id:
-            return Response({'error':'Course ID is required.'}, status=400)
-        
+            return Response({"error": "Course ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             student.enrolled_courses.add(course_id)
-            return Response({'message':'Successfully enrolled in course.'})
-        except:
-            return Response ({'error':'Invalid Course ID'}, status=400)
-                      
+            return Response({"message": "Successfully enrolled in course."})
+        except Exception:
+            return Response({"error": "Invalid Course ID."}, status=status.HTTP_400_BAD_REQUEST)

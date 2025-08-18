@@ -1,15 +1,24 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-# Create your models here.
+
 
 class User(AbstractUser):
-    ROLE_CHOICES = (
-        ('admin', 'Admin'),
-        ('teacher', 'Teacher'),
-        ('student', 'Student'),
+    """
+    Custom User model that extends Django's AbstractUser.
+    Adds a `role` field to differentiate between Admin, Teacher, and Student.
+    """
+
+    class Roles(models.TextChoices):
+        ADMIN = "admin", "Admin"
+        TEACHER = "teacher", "Teacher"
+        STUDENT = "student", "Student"
+
+    role = models.CharField(
+        max_length=10,
+        choices=Roles.choices,
+        default=Roles.STUDENT,
     )
-    
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
-    
-    def __str__(self):
-        return f"{self.username} ({self.role})"
+
+    def __str__(self) -> str:
+        """Return a readable string representation of the user."""
+        return f"{self.username} ({self.get_role_display()})"

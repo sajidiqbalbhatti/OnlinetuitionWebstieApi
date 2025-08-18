@@ -1,18 +1,12 @@
 
 
 from pathlib import Path
+from datetime import timedelta
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-ok)(5n6m=0y@i4p5=0h%xsy_mcwrxw7vasfj+8#mm**5oxf)1x'
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
@@ -28,6 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'django_filters',
     'rest_framework.authtoken',
     'users',
     'courses',
@@ -80,10 +75,6 @@ DATABASES = {
 
 AUTH_USER_MODEL = 'users.User'
 
-
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -121,12 +112,46 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         # 'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.CursorPagination',
+    'PAGE_SIZE': 3,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    # _________Throttling______
+     'DEFAULT_THROTTLE_CLASSES': [
+        
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'login':'4/minute',
+        'register':'3/minute',
+        'otp':'3/minute',
+        'course_list':'60/minute',
+        'course_create':'5/hour',
+        'course_update':'5/hour',
+        'teacher_Pro_update':'5/days',
+        'teacher_Pro_create':'7/days',
+        'student_update':'2/days',
+        'student_create':'3/minute',
+         }
 }
+ # _______JWTTokenDefaultTime_________
+SIMPLE_JWT = {
+        'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # Example: Access token expires in 5 minutes
+        'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # Example: Refresh token expires in 1 day
+        # Other optional settings can be added here
+    }
+
