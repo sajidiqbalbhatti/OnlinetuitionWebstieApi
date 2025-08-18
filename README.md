@@ -34,45 +34,18 @@ This system manages **Tutors, Students, Parents, Courses, and Assignments** with
 ---
 
 ## 🏗 Project Structure
-
 online_tuition_project/
 │── users/ # Custom User model (roles: admin, tutor, student, parent)
 │ ├── models.py
 │ ├── serializers.py
 │ ├── views.py
 │ ├── urls.py
-│
-
 
 │── courses/ # Course Management
 │ ├── models.py
 │ ├── serializers.py
 │ ├── views.py
 │ ├── urls.py
-│
-
-
-│── assignments/ # Assignment Management
-│ ├── models.py
-│ ├── serializers.py
-│ ├── views.py
-│ ├── urls.py
-│
-
-│── students/ # Enrollment & Submissions
-│ ├── models.py
-│ ├── serializers.py
-│ ├── views.py
-│ ├── urls.py
-│
-│── tutors/ # Tutor profiles and permissions
-│
-
-│── settings.py # Project configurations (JWT, filters, permissions)
-│── urls.py # Root project urls
-
-
----
 
 ## ⚙️ Installation
 
@@ -96,35 +69,36 @@ online_tuition_project/
 📌 API Endpoints (Overview)
 👥 Users
 
-   POST /api/auth/register/ → Register new user.
+    POST /api/auth/register/ → Register new user.
 
-   POST /api/auth/login/ → Login (JWT).
+    POST /api/auth/login/ → Login (JWT).
 
-   GET /api/users/ → List all users (admin only).
+    GET /api/users/ → List all users (admin only).
 
 📚 Courses
 
-   POST /api/courses/ → Tutor creates course.
+    POST /api/courses/ → Tutor creates course.
 
-   PUT /api/courses/{id}/ → Only creator tutor can update.
+    PUT /api/courses/{id}/ → Only creator tutor can update.
 
-   DELETE /api/courses/{id}/ → Only creator tutor can delete.
+    DELETE /api/courses/{id}/ → Only creator tutor can delete.
 
    GET /api/courses/ → List all courses.
 
 📝 Assignments
 
-   POST /api/assignments/ → Tutor creates assignment for their course.
+    POST /api/assignments/ → Tutor creates assignment for their course.
 
-   GET /api/assignments/ → List assignments (filter by course/tutor).
+    GET /api/assignments/ → List assignments (filter by course/tutor).
 
-   POST /api/assignments/{id}/submit/ → Student submits assignment (only if enrolled).
+    POST /api/assignments/{id}/submit/ → Student submits assignment (only if enrolled).
 
 🎓 Enrollments
 
-   POST /api/courses/{id}/enroll/ → Student enrolls in course.
+    POST /api/courses/{id}/enroll/ → Student enrolls in course.
 
-   GET /api/students/enrollments/ → Student views their courses.
+    GET /api/students/enrollments/ → Student views their courses.
+
 
 
 
