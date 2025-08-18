@@ -1,7 +1,7 @@
 # 🎓 Online Tuition Management System (Django + DRF)
 
 An advanced **Online Tuition Management System** built with **Django Rest Framework (DRF)**.  
-This system manages **Tutors, Students, Parents, Courses, and Assignments** with role-based access control using **Custom JWT Authentication**.
+This system manages **Tutors, Students, Parents, Courses, and Assignments** with role-based access control using ** JWT Authentication**.
 
 ---
 
@@ -84,6 +84,7 @@ This system manages **Tutors, Students, Parents, Courses, and Assignments** with
     POST /api/courses/{id}/enroll/ → Student enrolls in course.
 
     GET /api/students/enrollments/ → Student views their courses.
+
 
 
 
