@@ -78,20 +78,6 @@ class StudentListView(generics.ListAPIView):
     search_fields = ["student_name", "age", "student_class"]
 
 
-# ----------------------------------------------------------------------
-# Student Public Detail API
-# ----------------------------------------------------------------------
-class StudentPublicDetailView(APIView):
-    """
-    Get student details by student ID (public access).
-    """
-
-    permission_classes = [AllowAny]
-
-    def get(self, request, pk):
-        student = get_object_or_404(Student, pk=pk)
-        serializer = StudentSerializer(student)
-        return Response(serializer.data)
 
 
 # ----------------------------------------------------------------------
