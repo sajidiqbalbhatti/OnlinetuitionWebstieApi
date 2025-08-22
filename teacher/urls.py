@@ -14,11 +14,11 @@ urlpatterns = [
     # ------------------------------------------------------------------
     
     # List all teachers
-    path("profile/", TeacherListView.as_view(), name="teacher-list"),
+    path("", TeacherListView.as_view(), name="teacher-list"),
     
     # Create a teacher profile (only for authenticated teachers)
-    path("profile/create/", TeacherCreateView.as_view(), name="teacher-create"),
+    path("create/", TeacherCreateView.as_view(), name="teacher-create"),
     
     # Retrieve, update, or delete the logged-in teacher's profile
-    path("profile/<int:pk>/", TeacherProfileManageView.as_view(), name="teacher-detail"),
+    path("<int:pk>/", TeacherProfileManageView.as_view(), name="teacher-detail"),
 ]

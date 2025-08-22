@@ -16,6 +16,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Assignment
 from .serializer import AssignmentSerializer
 from .filters import AssignmentFilter
+from .permission import IsTeacherOrReadOnly
 import random
 
 
@@ -58,12 +59,13 @@ class AssignmentDetail(APIView):
     Only the tutor who created the assignment can update or delete it.
     """
     permission_classes = [AllowAny]
+    permission_classes=[IsTeacherOrReadOnly]
 
     def get_object(self, pk):
         try:
             return Assignment.objects.get(pk=pk)
         except Assignment.DoesNotExist:
-            raise Http404("Course not found for assignment.")
+            raise Http404("Assignment Not Found.")
 
     def get(self, request, pk):
         assignment = self.get_object(pk)
@@ -72,9 +74,8 @@ class AssignmentDetail(APIView):
 
     def put(self, request, pk):
         assignment = self.get_object(pk)
-        if assignment.tutor != request.user:
-            raise PermissionDenied("You do not have permission to update this assignment.")
-
+        # __add the custom permission
+        self.check_object_permissions(request, assignment)
         serializer = AssignmentSerializer(assignment, data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -82,9 +83,8 @@ class AssignmentDetail(APIView):
 
     def delete(self, request, pk):
         assignment = self.get_object(pk)
-        if assignment.tutor != request.user:
-            raise PermissionDenied("You do not have permission to delete this assignment.")
-
+        # _____add the custom permission
+        self.check_object_permissions(request, assignment)
         assignment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

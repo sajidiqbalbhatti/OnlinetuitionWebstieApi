@@ -12,4 +12,4 @@ class Notification(models.Model):
     read = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"To: {self.recipient.username} | From: {self.sender.username}"
+        return f"To:{self.recipient.username}|From:{self.sender.username}"

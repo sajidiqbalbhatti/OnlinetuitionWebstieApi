@@ -142,15 +142,15 @@ REST_FRAMEWORK = {
         'course_list':'60/minute',
         'course_create':'5/hour',
         'course_update':'5/hour',
-        'teacher_Pro_update':'5/days',
-        'teacher_Pro_create':'7/days',
-        'student_update':'2/days',
+        'teacher_Pro_update':'5/minute',
+        'teacher_Pro_create':'7/minute',
+        'student_update':'6/minute',
         'student_create':'3/minute',
          }
 }
  # _______JWTTokenDefaultTime_________
 SIMPLE_JWT = {
-        'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # Example: Access token expires in 5 minutes
+        'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Example: Access token expires in 5 minutes
         'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # Example: Refresh token expires in 1 day
         # Other optional settings can be added here
     }

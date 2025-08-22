@@ -7,9 +7,10 @@ class AssignmentSerializer(serializers.ModelSerializer):
         source='course.tutor.full_name', 
         read_only=True
     )
-    course_name = serializers.CharField(
-        source='course.title', 
-        read_only=True
+     # yahan pk ki jagah title ko input accept karne ke liye
+    course = serializers.SlugRelatedField(
+        slug_field='title',
+        queryset=Course.objects.all()
     )
 
     class Meta:
@@ -20,7 +21,7 @@ class AssignmentSerializer(serializers.ModelSerializer):
             'description',
             'due_date',
             'tutor_name',
-            'course_name'
+            
         ]
 
     def validate_course(self, course):

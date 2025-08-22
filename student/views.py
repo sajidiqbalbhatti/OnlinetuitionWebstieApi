@@ -97,12 +97,14 @@ class StudentPublicDetailView(APIView):
 # ----------------------------------------------------------------------
 # Logged-in Student Profile Management
 # ----------------------------------------------------------------------
+
+from .permission import IsStudent
 class StudentMeView(APIView):
     """
     Logged-in student can retrieve, update, or delete their profile.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStudent]
     throttle_classes = [StudentUpdateThrottle]
 
     def get_throttles(self):
@@ -111,19 +113,20 @@ class StudentMeView(APIView):
             return []
         return super().get_throttles()
 
-    def get(self, request):
-        student = getattr(request.user, "student", None)
-        if not student:
-            return Response({"error": "Profile does not exist."}, status=status.HTTP_404_NOT_FOUND)
+    def get(self, request,pk):
+        student = get_object_or_404(Student, pk=pk)
+        # if student!==:
+        #     return Response({"error": "Profile does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = StudentSerializer(student)
         return Response(serializer.data)
 
-    def put(self, request):
-        student = getattr(request.user, "student", None)
-        if not student:
-            return Response({"error": "Profile does not exist."}, status=status.HTTP_404_NOT_FOUND)
-
+    def put(self, request,pk):
+        student = get_object_or_404(Student, pk=pk)
+        # if not student:
+        #     return Response({"error": "Profile does not exist."}, status=status.HTTP_404_NOT_FOUND)
+        
+        self.check_object_permissions(request, student)
         serializer = StudentSerializer(student, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -131,11 +134,9 @@ class StudentMeView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request):
-        student = getattr(request.user, "student", None)
-        if not student:
-            return Response({"error": "Profile does not exist."}, status=status.HTTP_404_NOT_FOUND)
-
+    def delete(self, request,pk):
+        student = get_object_or_404(Student,pk=pk)
+        self.check_object_permissions(request,student)
         student.delete()
         return Response({"message": "Profile deleted successfully."}, status=status.HTTP_200_OK)
 

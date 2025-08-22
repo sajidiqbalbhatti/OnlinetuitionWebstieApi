@@ -81,13 +81,16 @@ class CourseCreateView(APIView):
 
 # ---------------------------
 # Course Detail / Update / Delete API
+
 # ---------------------------
+
+from .permission import IsCourseTutor
 class CourseDetailView(APIView):
     """
     Retrieve, update, or delete a course.
     Only the course's tutor can update or delete.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCourseTutor]
 
     def get_throttles(self):
         if self.request.method == 'PUT':
@@ -112,12 +115,18 @@ class CourseDetailView(APIView):
         if not course:
             return Response({"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        
+        self.check_object_permissions(request,course)
+
+
         # Check teacher permission
-        try:
-            if course.tutor != request.user.teacher_profile:
-                return Response({"detail": "You do not have permission to update this course."}, status=status.HTTP_403_FORBIDDEN)
-        except AttributeError:
-            return Response({"detail": "Only teachers can update courses."}, status=status.HTTP_403_FORBIDDEN)
+        
+        
+        # try:
+        #     if course.tutor != request.user.teacher_profile:
+        #         return Response({"detail": "You do not have permission to update this course."}, status=status.HTTP_403_FORBIDDEN)
+        # except AttributeError:
+        #     return Response({"detail": "Only teachers can update courses."}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = CourseSerializer(course, data=request.data, partial=True)
         if serializer.is_valid():
@@ -125,7 +134,7 @@ class CourseDetailView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, pk):
+    def delete(self, request, pk):         
         course = self.get_object(pk)
         if not course:
             return Response({"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND)

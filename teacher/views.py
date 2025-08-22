@@ -7,7 +7,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import CursorPagination
 from rest_framework.throttling import UserRateThrottle
 from django_filters.rest_framework import DjangoFilterBackend
-
+from django.shortcuts import get_object_or_404
 from .models import Teacher
 from .serializer import TeacherSerializer
 from .filters import TeacherFilter
@@ -17,32 +17,28 @@ from .filters import TeacherFilter
 # Custom Scoped Throttling
 # ----------------------------------------------------------------------
 class CustomTeacherProfileCreateThrottle(UserRateThrottle):
-    scope = "teacher_profile_create"
+    scope = "teacher_Pro_create"
 
 
 class CustomTeacherProfileUpdateThrottle(UserRateThrottle):
-    scope = "teacher_profile_update"
+    scope = "teacher_Pro_update"
 
 
 # ----------------------------------------------------------------------
 # Teacher Create API
 # ----------------------------------------------------------------------
+from .permissions import IsTeacher
 class TeacherCreateView(APIView):
     """
     Allows authenticated teachers to create their profile.
     Only one profile per teacher is allowed.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsTeacher]
     throttle_classes = [CustomTeacherProfileCreateThrottle]
 
     def post(self, request):
-        if request.user.role != "teacher":
-            return Response(
-                {"error": "Only teachers can create a teacher profile."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
+        
         if hasattr(request.user, "teacher_profile"):
             return Response(
                 {"error": "Teacher profile already exists."},
@@ -85,9 +81,9 @@ class TeacherProfileManageView(generics.RetrieveUpdateDestroyAPIView):
     """
     Logged-in teacher can view, update, or delete their profile.
     """
-
+    queryset =Teacher.objects.all()
     serializer_class = TeacherSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsTeacher]
     throttle_classes = [CustomTeacherProfileUpdateThrottle]
 
     def get_throttles(self):
@@ -98,35 +94,4 @@ class TeacherProfileManageView(generics.RetrieveUpdateDestroyAPIView):
             return []
         return super().get_throttles()
 
-    def get_object(self):
-        """
-        Returns teacher profile of the logged-in user.
-        """
-        return getattr(self.request.user, "teacher_profile", None)
-
-    def get(self, request, *args, **kwargs):
-        teacher = self.get_object()
-        if not teacher:
-            return Response(
-                {"detail": "You are not registered as a teacher."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        return self.retrieve(request, *args, **kwargs)
-
-    def put(self, request, *args, **kwargs):
-        teacher = self.get_object()
-        if not teacher:
-            return Response(
-                {"detail": "You are not registered as a teacher."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        return self.update(request, *args, **kwargs)
-
-    def delete(self, request, *args, **kwargs):
-        teacher = self.get_object()
-        if not teacher:
-            return Response(
-                {"detail": "You are not registered as a teacher."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        return self.destroy(request, *args, **kwargs)
+    
