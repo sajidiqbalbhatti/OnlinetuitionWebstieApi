@@ -12,6 +12,7 @@ from .views import (
     LoginView,
     UserListView,
     CustomTokenObtainPairView,
+    DetailApiView
 )
 
 urlpatterns = [
@@ -20,5 +21,7 @@ urlpatterns = [
     path("token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     path("register/", RegisterView.as_view(), name="register"),
     path("login/", LoginView.as_view(), name="login"),
-    path("users/", UserListView.as_view(), name="user_list"),
+    path("List/", UserListView.as_view(), name="user_list"),
+    path("List/<int:pk>/", DetailApiView.as_view(), name="Detail_list"),
+    
 ]

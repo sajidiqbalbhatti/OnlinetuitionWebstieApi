@@ -10,6 +10,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Course
 from .Serializer import CourseSerializer
 from .filters import CourseFilter
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 
 
 # ---------------------------
@@ -30,6 +32,7 @@ class CourseUpdateThrottle(UserRateThrottle):
 # ---------------------------
 # Course List API
 # ---------------------------
+@method_decorator(cache_page(60*10), name="dispatch")
 class CourseListView(generics.ListAPIView):
     """
     Returns a list of courses with support for:
@@ -38,8 +41,9 @@ class CourseListView(generics.ListAPIView):
     - Ordering by title
     - Filtering by title or tutor
     """
+    
+    queryset = Course.objects.select_related('tutor')
     permission_classes = [AllowAny]
-    queryset = Course.objects.all()
     serializer_class = CourseSerializer
     pagination_class = CursorPagination
     throttle_classes = [CourseListThrottle]
@@ -53,6 +57,10 @@ class CourseListView(generics.ListAPIView):
         'tutor__first_name',
         'tutor__last_name'
     ]
+    
+    def get_queryset(self):
+        print("DB HIT: fetching courses")  # Debug line to check caching
+        return super().get_queryset()
     # filterset_class = CourseFilter  # Optional
 
 
@@ -83,7 +91,7 @@ class CourseCreateView(APIView):
 # Course Detail / Update / Delete API
 
 # ---------------------------
-
+from django.core.cache import cache
 from .permission import IsCourseTutor
 class CourseDetailView(APIView):
     """
@@ -104,11 +112,26 @@ class CourseDetailView(APIView):
             return None
 
     def get(self, request, pk):
-        course = self.get_object(pk)
-        if not course:
-            return Response({"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
+        cache_key = f"course_{pk}"
+        course = cache.get(cache_key)
+        if course:
+            print("✅ Cache se data aya ",course)
+        else:
+            print("DB se data fetch ho rha han ")
+            try:
+                course = Course.objects.get(pk=pk)
+                cache.set(cache_key, course, timeout=60*5)
+            except Course.DoesNotExist:
+                return Response({"detail":"Course not found"}, status=status.HTTP_404_NOT_FOUND)
+            
         serializer = CourseSerializer(course)
         return Response(serializer.data)
+                
+        # course = self.get_object(pk)
+        # if not course:
+        #     return Response({"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
+        # serializer = CourseSerializer(course)
+        # return Response(serializer.data)
 
     def put(self, request, pk):
         course = self.get_object(pk)
@@ -116,21 +139,13 @@ class CourseDetailView(APIView):
             return Response({"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
 
         
-        self.check_object_permissions(request,course)
-
-
-        # Check teacher permission
-        
-        
-        # try:
-        #     if course.tutor != request.user.teacher_profile:
-        #         return Response({"detail": "You do not have permission to update this course."}, status=status.HTTP_403_FORBIDDEN)
-        # except AttributeError:
-        #     return Response({"detail": "Only teachers can update courses."}, status=status.HTTP_403_FORBIDDEN)
+        self.check_object_permissions(request,course) # customPermission 
 
         serializer = CourseSerializer(course, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            # Cache delete
+            # cache.delete(f"course_{pk}")
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -147,4 +162,6 @@ class CourseDetailView(APIView):
             return Response({"detail": "Only teachers can delete courses."}, status=status.HTTP_403_FORBIDDEN)
 
         course.delete()
+        # Cache delete
+        cache.delete(f"course_{pk}")
         return Response({"detail": "Course deleted successfully."}, status=status.HTTP_204_NO_CONTENT)

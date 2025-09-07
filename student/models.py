@@ -45,7 +45,8 @@ class Student(models.Model):
     enrolled_courses = models.ManyToManyField(
         'courses.Course',
         related_name='students',
-        blank=True,
+        blank=False,
+        null=False,
         help_text="Courses the student is enrolled in."
     )
 

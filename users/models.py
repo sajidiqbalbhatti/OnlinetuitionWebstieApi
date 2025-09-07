@@ -16,7 +16,9 @@ class User(AbstractUser):
     role = models.CharField(
         max_length=10,
         choices=Roles.choices,
-        default=Roles.STUDENT,
+        blank=False,   # form level par required
+        null=False,
+        
     )
 
     def __str__(self) -> str:

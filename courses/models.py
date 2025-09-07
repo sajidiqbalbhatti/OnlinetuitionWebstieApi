@@ -8,6 +8,8 @@ class Course(models.Model):
     """
     title = models.CharField(max_length=100, help_text="Title of the course")
     description = models.TextField(help_text="Detailed description of the course")
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # 💰
+
     tutor = models.ForeignKey(
         Teacher,
         on_delete=models.CASCADE,

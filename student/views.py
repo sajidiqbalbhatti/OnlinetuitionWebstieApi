@@ -6,10 +6,14 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.pagination import CursorPagination
 from rest_framework.throttling import UserRateThrottle
-
 from .models import Student
 from .serializers import StudentSerializer
 from .filter import StudentAgeFilter
+# ______Cache
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+
+
 
 
 # ----------------------------------------------------------------------
@@ -62,13 +66,14 @@ class StudentCreateView(APIView):
 # ----------------------------------------------------------------------
 # Student List API
 # ----------------------------------------------------------------------
+@method_decorator(cache_page(60*2),name='dispatch')
 class StudentListView(generics.ListAPIView):
     """
     Public endpoint to list all students.
     Supports filtering, searching, ordering, and cursor pagination.
     """
-
-    queryset = Student.objects.all()
+  
+    queryset = Student.objects.prefetch_related('enrolled_courses__tutor')
     serializer_class = StudentSerializer
     permission_classes = [AllowAny]
     pagination_class = CursorPagination
@@ -76,8 +81,22 @@ class StudentListView(generics.ListAPIView):
 
     ordering_fields = ["student_name", "age"]
     search_fields = ["student_name", "age", "student_class"]
+    
+    def get_queryset(self):
+        print("DB Query executed")
+        return super().get_queryset()
+    # ________low level Cache_______
 
-
+    # def get_queryset(self):
+    #     student_list =cache.get('student_list')
+        
+    #     if not student_list:
+    #         print("Db use")
+    #         student_list = Student.objects.prefetch_related('enrolled_courses__tutor')
+    #         cache.set('student_list', student_list, 60*1)
+    #     else:
+    #       print('use cache')
+    #     return student_list
 
 
 # ----------------------------------------------------------------------

@@ -11,18 +11,24 @@ from django.shortcuts import get_object_or_404
 from .models import Teacher
 from .serializer import TeacherSerializer
 from .filters import TeacherFilter
+# ____________cache________
+from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
+
+
 
 
 # ----------------------------------------------------------------------
 # Custom Scoped Throttling
 # ----------------------------------------------------------------------
+
 class CustomTeacherProfileCreateThrottle(UserRateThrottle):
     scope = "teacher_Pro_create"
 
 
 class CustomTeacherProfileUpdateThrottle(UserRateThrottle):
     scope = "teacher_Pro_update"
-
 
 # ----------------------------------------------------------------------
 # Teacher Create API
@@ -59,20 +65,36 @@ class TeacherCreateView(APIView):
 # ----------------------------------------------------------------------
 # Teacher List API
 # ----------------------------------------------------------------------
+@method_decorator(cache_page(60*3),name='dispatch')
 class TeacherListView(generics.ListAPIView):
     """
     Public endpoint: List all teachers.
     Supports pagination, filtering, searching, and ordering.
     """
 
-    queryset = Teacher.objects.all()
+    queryset = Teacher.objects.select_related('user')
     serializer_class = TeacherSerializer
     permission_classes = [AllowAny]
     pagination_class = CursorPagination
     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
     filterset_class = TeacherFilter
     search_fields = ["first_name", "last_name", "qualification"]
-
+    
+    def get_queryset(self):
+        print("DB query is working")
+        return super().get_queryset()
+    # __lowLevelCache_____
+    # def get_queryset(self):
+    #     teacher_list = cache.get('teacher_list')
+        
+    #     if not teacher_list:
+    #         print("Cache Miss fetching from DB")
+    #         teacher_list=Teacher.objects.select_related('user')
+    #         cache.set('teacher_list', teacher_list, timeout=60*1)
+    #     else:
+    #         print('Cache hit')
+    #     return teacher_list
+  
 
 # ----------------------------------------------------------------------
 # Teacher Profile Manage API

@@ -2,9 +2,9 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView,RetrieveAPIView
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated,IsAdminUser
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -61,6 +61,13 @@ class UserListView(ListAPIView):
     filterset_fields = ['username', 'role']
 
 
+
+class DetailApiView(RetrieveAPIView):
+    queryset =User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+    
+    
 # ---------------------------------------------------------------------
 # User Registration API
 # ---------------------------------------------------------------------
